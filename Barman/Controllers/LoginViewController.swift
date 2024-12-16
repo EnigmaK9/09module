@@ -1,147 +1,191 @@
-//
-//  CustomLoginViewController.swift
-//  Barman
-//
-//  Created by Carlos Padilla on 22/11/23.
-//
-
 import UIKit
 
 class CustomLoginViewController: UIViewController, UITextFieldDelegate {
 
-    let label = UILabel()
+    // UI elements
+    let bannerLabel = UILabel()         // banner label: Barman
+    let titleLabel = UILabel()
     let accountField = UITextField()
     let passwordField = UITextField()
+    
+    // "Remember me" checkbox (use .custom to avoid system tint overriding images)
+    let rememberMeCheckbox = UIButton(type: .custom)
+    
+    // Login button (we’ll use a config in iOS 15+)
     let loginButton = UIButton()
     
-    // An activity indicator is created for local usage (optional).
-    let actInd = UIActivityIndicatorView(style: .large)
+    // Activity Indicator
+    let activityIndicator = UIActivityIndicatorView(style: .large)
+    
+    // Main stack view for easy layout
+    let stackView = UIStackView()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.view.backgroundColor = .cyan
         
-        // The label is configured.
-        label.text = "Enter your credentials:"
-        label.font = UIFont(name: "SegoeUI-Semibold", size: 16)
-        label.textAlignment = .center
-        self.view.addSubview(label)
-
-        // The accountField is set up.
-        accountField.placeholder = "Registered Email:"
-        accountField.setLeftPaddingPoints(10)
-        accountField.customize(false)
-        self.view.addSubview(accountField)
+        // Background color
+        self.view.backgroundColor = .systemGroupedBackground
+        
+        // -- Banner Label --
+        bannerLabel.text = "Barman"
+        bannerLabel.font = UIFont.systemFont(ofSize: 24, weight: .bold)
+        bannerLabel.textAlignment = .center
+        bannerLabel.textColor = .systemBlue
+        
+        // -- Title Label --
+        titleLabel.text = "Enter Your Credentials"
+        titleLabel.font = UIFont.systemFont(ofSize: 20, weight: .semibold)
+        titleLabel.textAlignment = .center
+        titleLabel.textColor = .label
+        
+        // -- Account Field --
+        accountField.placeholder = "Registered Email"
+        accountField.borderStyle = .roundedRect
         accountField.keyboardType = .emailAddress
         accountField.autocapitalizationType = .none
         accountField.autocorrectionType = .no
         accountField.returnKeyType = .next
         accountField.delegate = self
         
-        // The passwordField is set up.
-        passwordField.placeholder = "Password:"
-        passwordField.setLeftPaddingPoints(10)
-        passwordField.customize(false)
+        // -- Password Field --
+        passwordField.placeholder = "Password"
+        passwordField.borderStyle = .roundedRect
         passwordField.isSecureTextEntry = true
-        self.view.addSubview(passwordField)
         passwordField.autocapitalizationType = .none
         passwordField.autocorrectionType = .no
-        passwordField.returnKeyType = .next
+        passwordField.returnKeyType = .done
         passwordField.delegate = self
-    
-        // The loginButton is configured.
-        loginButton.backgroundColor = Utils.UIColorFromRGB(rgbValue: colorPrimaryDark)
-        loginButton.setTitle("Log In", for: .normal)
-        loginButton.layer.cornerRadius = 5
+        
+        // -- Remember Me Checkbox (type: .custom) --
+        rememberMeCheckbox.setTitle("Remember me", for: .normal)
+        rememberMeCheckbox.setTitleColor(.label, for: .normal)
+        rememberMeCheckbox.setImage(UIImage(systemName: "square"), for: .normal)
+        rememberMeCheckbox.setImage(UIImage(systemName: "checkmark.square"), for: .selected)
+        rememberMeCheckbox.contentHorizontalAlignment = .left
+        rememberMeCheckbox.addTarget(self, action: #selector(toggleRememberMe), for: .touchUpInside)
+        
+        // -- Login Button (iOS 15+ config, fallback for older iOS) --
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.filled()
+            config.title = "Log In"
+            config.baseForegroundColor = .white
+            config.baseBackgroundColor = .systemBlue
+            config.cornerStyle = .fixed
+            config.contentInsets = NSDirectionalEdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20)
+            loginButton.configuration = config
+            loginButton.layer.cornerRadius = 8 // optional if needed
+        } else {
+            // Fallback for iOS < 15
+            loginButton.setTitle("Log In", for: .normal)
+            loginButton.backgroundColor = .systemBlue
+            loginButton.setTitleColor(.white, for: .normal)
+            loginButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .medium)
+            loginButton.layer.cornerRadius = 8
+        }
         loginButton.addTarget(self, action: #selector(loginAction), for: .touchUpInside)
-        self.view.addSubview(loginButton)
         
-        // The activity indicator is configured.
-        actInd.color = .darkGray
-        actInd.hidesWhenStopped = true
-        actInd.translatesAutoresizingMaskIntoConstraints = false
-        self.view.addSubview(actInd)
+        // -- Activity Indicator --
+        activityIndicator.color = .darkGray
+        activityIndicator.hidesWhenStopped = true
+        activityIndicator.translatesAutoresizingMaskIntoConstraints = false
         
+        // -- Stack View --
+        stackView.axis = .vertical
+        stackView.spacing = 16
+        stackView.alignment = .fill
+        stackView.distribution = .fill
+        
+        // Add subviews to stackView
+        stackView.addArrangedSubview(bannerLabel)
+        stackView.addArrangedSubview(titleLabel)
+        stackView.addArrangedSubview(accountField)
+        stackView.addArrangedSubview(passwordField)
+        stackView.addArrangedSubview(rememberMeCheckbox)
+        stackView.addArrangedSubview(loginButton)
+        
+        // Add stackView & activityIndicator to the main view
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        self.view.addSubview(stackView)
+        self.view.addSubview(activityIndicator)
+        
+        // Layout constraints
         NSLayoutConstraint.activate([
-            actInd.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
-            actInd.centerYAnchor.constraint(equalTo: self.view.centerYAnchor)
+            stackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            stackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            stackView.centerYAnchor.constraint(equalTo: view.centerYAnchor, constant: -40),
+            
+            activityIndicator.centerXAnchor.constraint(equalTo: self.view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: self.view.centerYAnchor)
         ])
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        let rect = self.view.bounds
-        label.frame = CGRect(x: 10, y: 60, width: rect.width - 20, height: 35)
-        accountField.frame = CGRect(x: 20, y: label.frame.maxY + 20, width: rect.width - 40, height: 35)
-        passwordField.frame = CGRect(x: 20, y: accountField.frame.maxY + 25, width: rect.width - 40, height: 35)
-        loginButton.frame = CGRect(x: 40, y: passwordField.frame.maxY + 120, width: rect.width - 80, height: 45)
     }
     
+    // MARK: - Remember Me Toggle
+    @objc func toggleRememberMe() {
+        rememberMeCheckbox.isSelected.toggle()
+        // If you'd like, store this in UserDefaults:
+        // UserDefaults.standard.set(rememberMeCheckbox.isSelected, forKey: "rememberMe")
+        // UserDefaults.standard.synchronize()
+    }
+    
+    // MARK: - Login Action
     @objc func loginAction() {
-        // The keyboard is dismissed.
+        // Dismiss the keyboard
         self.view.endEditing(true)
-        var message = ""
         
-        // The internet connection is checked.
+        activityIndicator.startAnimating()
+        
+        // Check network connectivity
         if !NetworkReachability.shared.isConnected {
-            Utils.showMessage("No internet connection. Please check WiFi or cellular data.")
+            activityIndicator.stopAnimating()
+            Utils.showMessage("No internet connection. Please check Wi-Fi or cellular data.")
             return
         }
         
-        guard let account = self.accountField.text,
-              let pass = self.passwordField.text
-        else {
+        // Validate fields
+        guard let account = accountField.text, !account.isEmpty,
+              let pass = passwordField.text, !pass.isEmpty else {
+            activityIndicator.stopAnimating()
+            Utils.showMessage("Please fill both email and password.")
             return
         }
-        if account.isEmpty {
-            message = "Please enter your email"
-        } else if pass.isEmpty {
-            message = "Please enter your password"
-        }
         
-        if message.isEmpty {
-            // The activity indicator is started.
-            actInd.startAnimating()
-            
-            Services().loginService(account, pass) { dict in
-                DispatchQueue.main.async {
-                    // The activity indicator is stopped after the request.
-                    self.actInd.stopAnimating()
+        // Call your login service
+        Services().loginService(account, pass) { dict in
+            DispatchQueue.main.async {
+                self.activityIndicator.stopAnimating()
+                
+                guard let code = dict?["code"] as? Int,
+                      let msg = dict?["message"] as? String else {
+                    Utils.showMessage("An error occurred. Please try again or contact support.")
+                    return
+                }
+                if code == 200 {
+                    // Save session in UserDefaults
+                    UserDefaults.standard.set(true, forKey: "customLogged")
+                    UserDefaults.standard.synchronize()
                     
-                    guard let code = dict?["code"] as? Int,
-                          let msg = dict?["message"] as? String
-                    else {
-                        Utils.showMessage("An error occurred. Please try again or contact support.")
-                        return
+                    // Ask the parent view controller to segue
+                    if let parentVC = self.parent as? LoginInterface {
+                        parentVC.performSegue(withIdentifier: "loginOK", sender: nil)
                     }
-                    if code == 200 {
-                        // The session is saved in UserDefaults.
-                        UserDefaults.standard.set(true, forKey: "customLogged")
-                        UserDefaults.standard.synchronize()
-                        
-                        // Instead of calling `self.performSegue(...)`, the parent is asked to trigger the segue.
-                        if let parentVC = self.parent as? LoginInterface {
-                            parentVC.performSegue(withIdentifier: "loginOK", sender: nil)
-                        }
-                    } else {
-                        Utils.showMessage(msg)
-                    }
+                } else {
+                    Utils.showMessage(msg)
                 }
             }
-        } else {
-            Utils.showMessage(message)
         }
     }
     
+    // MARK: - UITextFieldDelegate
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         if textField == accountField {
             passwordField.becomeFirstResponder()
-            return false
-        }
-        if textField == passwordField {
+        } else {
             passwordField.resignFirstResponder()
-            return false
         }
-        return true
+        return false
     }
 }

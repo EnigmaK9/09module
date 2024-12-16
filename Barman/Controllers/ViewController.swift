@@ -2,11 +2,12 @@
 //  ViewController.swift
 //  Barman
 //
-//  Created by Carlos Padilla on 2024 December 13.
+//  Created by Carlos Padilla on december 13, 2024.
 //
 
 import UIKit
 import GoogleSignIn
+import AuthenticationServices // to handle apple id signout
 
 class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
 
@@ -28,8 +29,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             object: nil
         )
         
+        // Logout button on the navigation bar
         let logoutBtn = UIBarButtonItem(
-            image: UIImage(systemName:"rectangle.portrait.and.arrow.right"),
+            image: UIImage(systemName: "rectangle.portrait.and.arrow.right"),
             style: .plain,
             target: self,
             action: #selector(logout)
@@ -38,27 +40,35 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
 
     @objc func logout() {
-        // A confirmation alert is shown before logging out.
+        // (4) Show a logout confirmation alert with "Yes" and "No" buttons
         let alert = UIAlertController(
-            title: "Logout",
+            title: "Log Out",
             message: "Do you really want to log out?",
             preferredStyle: .alert
         )
+        
         let yesAction = UIAlertAction(title: "Yes", style: .destructive) { _ in
-            // If it is customLogin, the key is removed from UserDefaults.
+            // (5) if custom login was used, remove the "customLogged" key from UserDefaults
             if UserDefaults.standard.bool(forKey: "customLogged") == true {
+                // remove custom login flag from UserDefaults
                 UserDefaults.standard.removeObject(forKey: "customLogged")
                 UserDefaults.standard.synchronize()
             }
+
+            // Handle Apple sign-out by removing any related flags from UserDefaults
+            if UserDefaults.standard.bool(forKey: "appleLogged") == true {
+                UserDefaults.standard.removeObject(forKey: "appleLogged")
+                UserDefaults.standard.removeObject(forKey: "appleUserID")
+                UserDefaults.standard.synchronize()
+            }
             
-            // If an AppleId was used (not shown here).
-            
-            // Google session is signed out.
+            // Sign out from Google
             GIDSignIn.sharedInstance.signOut()
             
-            // This screen is dismissed to return to login.
+            // Dismiss this screen to return to the Login screen (if presented modally)
             self.dismiss(animated: true)
         }
+        
         let noAction = UIAlertAction(title: "No", style: .cancel, handler: nil)
         
         alert.addAction(yesAction)
@@ -67,7 +77,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     @objc func newDrinkNotification() {
-        // The external drink object is picked up from AppDelegate if available.
+        // the external drink object is picked up from AppDelegate if available.
         let ad = UIApplication.shared.delegate as! AppDelegate
         if let unDrink = ad.drinkExterno {
             performSegue(withIdentifier: SegueID.detail, sender: unDrink)
@@ -108,7 +118,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        // Any selected row is deselected here for neatness.
+        // Deselect any row that was previously selected, for neatness
         if let index = self.tableView.indexPathForSelectedRow {
             self.tableView.deselectRow(at: index, animated: true)
         }
